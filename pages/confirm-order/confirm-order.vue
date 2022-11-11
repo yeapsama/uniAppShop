@@ -1,0 +1,241 @@
+<template>
+	<view class='confirm-order bg-active-color'>
+		<Lines></Lines>
+		<!--地址-->
+		<view class='order-map' @tap='goPathList'>
+			<template v-if='path'>
+				<view class='map-title'>
+					<view class='map-name'>收件人：{{path.name}}</view>
+					<view>{{path.tel}}</view>
+				</view>
+				<view class='map-city'>收货地址：{{path.province}} {{path.city}} {{path.district}} {{path.address}}</view>
+			</template>
+			<template v-else>
+				<view class='map-title'>
+					<view class='map-name'>请选择地址</view>
+				</view>
+			</template>
+		</view>
+		<!--商品-->
+		<view class='goods-list'>
+			<view class='goods-content bg-active-color'
+				v-for='(item,index) in goodsList'
+				:key='index'
+			>
+				<image class='goods-img' :src='item.imgUrl' mode=""></image>
+				<view class='goods-text'>
+					<view class='goods-name'>{{item.name}}</view>
+					<view class='goods-size f-color'>颜色分类：黑色</view>
+					<view class='f-active-color' style='font-size:24rpx'>7天无理由</view>
+				</view>
+				<view>
+					<view>¥{{item.pprice}}</view>
+					<view class='f-color'>*{{item.num}}</view>
+				</view>
+			</view>
+		</view>
+		<!--底部 : 提交订单-->
+		<view class='order-foot'>
+			<view class='total-price'>合计：<text class='f-active-color'>¥{{totalCount.pprice}}</text></view>
+			<view class="confirm" @tap='goPayment'>提交订单</view>
+		</view>
+		
+	</view>
+</template>
+
+<script>
+	import $http from '@/common/api/request.js'
+	import Lines from '@/compoments/common/Lines.vue'
+	import {mapGetters,mapState,mapMutations} from 'vuex'
+	export default {
+		data() {
+			return {
+				path:false
+				// path:{
+				// 	name:'张三',
+				// 	tel:'18526482164',
+				// 	province:'广东省',
+				// 	city:'广州市',
+				// 	district:'荔湾区',
+				// 	address:'雄发百货'
+				// }
+			}
+		},
+		computed:{
+			...mapState({
+				list:state=>state.cart.list,
+                orderNumber:state=>state.order.ordernum,
+                selectedList:state=>state.cart.selectedList
+			}),
+			...mapGetters('path',['defaultPath']),
+			...mapGetters('cart',['totalCount']),
+			//根据商品列表找到对应e.detail 数据的 id  最终返回商品数据
+			goodsList(){
+				//map查找selectedList，里面每个元素都会执行第一个参数的方法；find查找list，查到即停止返回
+				return this.item.map(id=>{
+					return this.list.find(v=>v.id == id);
+				})
+			}
+		},
+		onLoad(e) {
+			
+			// //选中的商品id集合  [2,9]
+			this.item = JSON.parse(e.detail);
+			
+			// //如果有默认地址的一个赋值
+			$http.request({
+				url:"/selectAddress",
+				method:"POST",
+				header:{
+					token:true
+				}
+			}).then((res)=>{
+				this.__initAddressList(res);
+				if(this.defaultPath.length){
+					this.path = this.defaultPath[0];
+				}
+			}).catch(()=>{
+				uni.showToast({
+					title:'请求失败',
+					icon:'none'
+				})
+			})
+			//如果出发自定义事件，on去接受值
+			uni.$on("selectPathItem",(res)=>{
+				this.path = res;
+			})
+		},
+		onUnload() {
+			//移除全局通讯
+			uni.$off('selectPathItem',()=>{
+				console.log('移除了selectPathItem');
+			})
+		},
+		components:{
+			Lines
+		},
+		methods: {
+			...mapMutations('path',['__initAddressList']),
+			//跳转到地址管理页面
+			goPathList(){
+				uni.navigateTo({
+					url:'../my-path-list/my-path-list?type=selectedPath'
+				})
+			},
+			//确认支付
+			goPayment(){
+				
+				if(!this.path){
+					return uni.showToast({
+						title:'请选择收货地址',
+						icon:'none'
+					})
+				}
+				//先传递订单号
+                $http.request({
+                	url:"/submitOrder",
+                	method:"POST",
+                	header:{
+                		token:true
+                	},
+                    data:{
+		// 传递orderId给后端修改状态：待支付；传递selectedList给后端删除购物车里面被提交的数据
+                        orderId:this.orderNumber,
+                        shopArr:this.selectedList
+                    }
+                }).then((res)=>{
+                	if( res.success ){
+                        let newName = [];
+                        this.goodsList.forEach(v=>{
+                            newName.push( v.name );
+                        })
+                        //跳转到选择支付
+                        uni.navigateTo({
+                        	url:'../payment/payment?details='+JSON.stringify({
+                        		price:this.totalCount.pprice,
+								// list:newName
+                                list:this.list,
+                        	})
+                        })
+                    }
+                }).catch(()=>{
+                	uni.showToast({
+                		title:'请求失败',
+                		icon:'none'
+                	})
+                })
+			}
+		}
+	}
+</script>
+
+<style scoped>
+.confirm-order{
+	position: absolute;
+	left:0;
+	top:0;
+	rigth:0;
+	bottom:0;
+	width:100%;
+	height: 100%;
+}
+.order-map{
+	padding:20rpx;
+	background-color: #FFFFFF;
+	line-height: 40rpx;
+}
+.map-title{
+	display: flex;
+	justify-content: space-between;
+}
+.map-name{
+	font-weight: bold;
+}
+
+.goods-list{
+	margin-top:20rpx;
+	background-color: #FFFFFF;
+	padding:20rpx 0;
+}
+.goods-content{
+	margin-top:20rpx;
+	padding:10rpx 20rpx;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.goods-text{
+	width:360rpx;
+	padding:0 10rpx;
+	font-size:26rpx;
+}
+.goods-img{
+	width:160rpx;
+	height:160rpx;
+}
+.goods-name{
+	font-size:26rpx;
+}
+.goods-size{
+	font-size:24rpx;
+}
+.order-foot{
+	height: 80rpx;
+	width:100%;
+	position: fixed;
+	bottom:0;
+	left:0;
+	background-color: #FFFFFF;
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+}
+.total-price{
+	padding:0 20rpx;
+}
+.confirm{
+	color:#FFFFFF;
+	background-color: #49BDFB;
+	padding:10rpx 30rpx;
+}
+</style>

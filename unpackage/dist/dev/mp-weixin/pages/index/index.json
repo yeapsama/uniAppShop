@@ -1,0 +1,13 @@
+{
+  "navigationBarTitleText": "uni-app",
+  "usingComponents": {
+    "index-swiper": "/compoments/index/indexSwiper",
+    "recommend": "/compoments/index/recommend",
+    "my-card": "/compoments/common/card",
+    "commodity-list": "/compoments/common/commodityList",
+    "banner": "/compoments/index/banner",
+    "my-icon": "/compoments/index/icons",
+    "hot": "/compoments/index/hot",
+    "recommend-shop": "/compoments/index/recommendShop"
+  }
+}
