@@ -63,7 +63,7 @@
             "disableHostCheck" : true,
             "proxy" : {
                 "/api" : {
-                    "target" : "http://10.207.126.100:3000/", //自己项目接口域名
+                    "target" : "http://localhost:3000/", //自己项目接口域名
                     "changeOrigin" : true, //是否跨域
                     "secure" : true, // 设置支持https协议的代理
                     "pathRewrite" : {

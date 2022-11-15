@@ -69,7 +69,7 @@
 		},
         computed:{
             ...mapState({
-                orderNumber:state=>state.order.ordernumber,
+                orderNumber:state=>state.order.ordernum,
             })
         },
 		components:{
@@ -87,28 +87,46 @@
 			},
 			goPayment(){
                 
-                $http.request({
-                	url:"/payment",
-                	method:"POST",
-                	header:{
-                		token:true
-                	},
-                    data : {
-                        orderId:this.orderNumber,
-                        price:this.details.price,
-                        list:this.details.list
-                    }
-                }).then((res)=>{
+                // $http.request({
+                // 	url:"/payment",
+                // 	method:"POST",
+                // 	header:{
+                // 		token:true
+                // 	},
+                //     data : {
+                //         orderId:this.orderNumber,
+                //         price:this.details.price,
+                //         list:this.details.list
+                //     }
+                // }).then((res)=>{
                     
-                	plus.runtime.openURL( res.paymentUrl );
+                // 	plus.runtime.openURL( res.paymentUrl );
                     
-                })
+                // })
+                console.log(this.orderNumber,'11111111111111');
+				$http.request({
+				        	url:"/payment",
+				        	method:"POST",
+				        	header:{
+				        		token:true
+				        	},
+				            data:{
+				// 传递orderId给后端修改状态：待支付；传递selectedList给后端删除购物车里面被提交的数据
+				                orderId:this.orderNumber,
+				            }
+				        }).then((res)=>{
+				        	if( res.success ){
+				                uni.navigateTo({
+				                	url:"../payment-success/payment-success"
+				                })
+				            }
+				        }).catch(()=>{
+				        	uni.showToast({
+				        		title:'请求失败',
+				        		icon:'none'
+				        	})
+				        })
                 
-                
-                
-                uni.navigateTo({
-					url:"../payment-success/payment-success"
-				})
 			}
 		}
 	}

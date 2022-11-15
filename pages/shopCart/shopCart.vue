@@ -164,7 +164,7 @@
                 		token:true
                 	},
                 	data:{
-                		arr:newList
+                		arr:newList,
                 	}
                 }).then((res)=>{
                     if( res.success ){

@@ -4,59 +4,93 @@
 		<view class='order-header'>
 			<view 
 				class='header-item'
-				v-for='(item,index) in tabList'
+				v-for='(item,index) in tabHeader'
 				:key='index'
 				:class=' tabIndex==index?"active":""  '
 				@tap='changeTab(index)'
 			>{{item.name}}</view>
 		</view>
 		
-		<block
+		<!-- <block
 			v-for='(tabItem,tabI) in tabList'
 			:key='tabI'
-		>
-			<view v-show='tabI===tabIndex'>
-				<view v-if='tabItem.list.length > 0' class='order-main' :style="'height:'+clentHeight+'px;'">
+		> -->
+			<!-- <view v-show='tabI===tabIndex'> -->
+				<view v-if='tabIndex == 0' class='order-main' :style="'height:'+clentHeight+'px;'">
 					<!--商品-->
-					<view v-for='(k,i) in tabItem.list' :key='i'>
+					<view v-for='(k,i) in tabList' :key='i'>
 						<view class='order-goods'>
 							<view class="order-content-header">
 								<view style="display: flex;justify-content: center;align-items: center;">
 									<image src="../../static/img/wxf.png" mode="" style="width: 40rpx;height: 40rpx;text-align: center;margin-right: 15rpx;"></image>
 									<view>淘宝官方旗舰店</view>
 								</view>
-								<view class='f-active-color'>{{ k.status }}</view>
+								<view class='f-active-color' v-if="k.order_status==3">已付款</view>
+								<view class='f-active-color' v-else-if="k.order_status==2">待支付</view>
+								<view class='f-active-color' v-else>待下单</view>
 							</view>
-							<view class='goods-item'v-for='(item,index) in k.goods_item' :key="index">
+							<view class='goods-item'v-for='(item,index) in k.data' :key="index">
 								<OrderList :item='item' :index='index'></OrderList>
 							</view>
 						</view>
 						<Lines></Lines>
 						<!--总价-->
 						<view class='total-price'>
-							订单金额: <text class='f-active-color'>¥{{k.totalPrice}}</text> (包含运费¥0.00)
+							订单金额: <text class='f-active-color'>¥{{k.goods_price}}</text> (包含运费¥0.00)
 						</view>
 						<Lines style="width: 80%;margin: 0 auto;"></Lines>
 						<!--支付-->
 						<view class='payment'>
-							<view class='payment-text f-active-color'>支付</view>
+							<view class='payment-text f-active-color' v-if="k.order_status!=3">支付</view>
 						</view>
 					</view>
 				</view>
 				
+				<view v-else-if='tabIndex == 1||tabIndex == 2||tabIndex == 3' class='order-main' :style="'height:'+clentHeight+'px;'">
+					<!--商品-->
+					<block v-for='(k,i) in tabList' :key='i'>
+					<view v-show="k.order_status==tabIndex">
+						<view class='order-goods'>
+							<view class="order-content-header">
+								<view style="display: flex;justify-content: center;align-items: center;">
+									<image src="../../static/img/wxf.png" mode="" style="width: 40rpx;height: 40rpx;text-align: center;margin-right: 15rpx;"></image>
+									<view>淘宝官方旗舰店</view>
+								</view>
+								<view class='f-active-color' v-if="k.order_status==3">已付款</view>
+								<view class='f-active-color' v-else-if="k.order_status==2">待支付</view>
+								<view class='f-active-color' v-else>待下单</view>
+							</view>
+							<view class='goods-item'v-for='(item,index) in k.data' :key="index">
+								<OrderList :item='item' :index='index'></OrderList>
+							</view>
+						</view>
+						<Lines></Lines>
+						<!--总价-->
+						<view class='total-price'>
+							订单金额: <text class='f-active-color'>¥{{k.goods_price}}</text> (包含运费¥0.00)
+						</view>
+						<Lines style="width: 80%;margin: 0 auto;"></Lines>
+						<!--支付-->
+						<view class='payment'>
+							<view class='payment-text f-active-color' v-if="k.order_status!=3">支付</view>
+						</view>
+					</view>
+					</block>
+				</view>
 				<view v-else class='no-order' :style="'height:'+clentHeight+'px;'">
 					<view>您还没有相关订单</view>
 					<view class='no-order-home'>去首页逛逛</view>
 				</view>
 				
-			</view>
-		</block>
+			<!-- </view> -->
+		<!-- </block> -->
 	</view>
 </template>
 
 <script>
 	import Lines from '@/compoments/common/Lines.vue'
 	import OrderList from '@/compoments/order/order-list.vue'
+	import $http from '@/common/api/request.js'
 	export default {
 		data() {
 			return {
@@ -64,6 +98,7 @@
 				clentHeight:0,
 				//当前位置
 				tabIndex:0,
+				tabHeader:[{name:"全部"},{name:"待下单"},{name:"待付款"},{name:"已支付"}],
 				//顶部选项卡的数据
 				tabList:[
 					{
@@ -137,6 +172,21 @@
 				success: (res) => {
 					this.clentHeight = res.windowHeight - this.getClientHeight();
 				}
+			}),
+			$http.request({
+				url:"/myorder",
+				method:"POST",
+				header:{
+					token:true
+				}
+			}).then((res)=>{
+				this.tabList = res
+			   console.log(res,'myordermyorder');
+			}).catch((err)=>{
+				uni.showToast({
+					title:'请求失败',
+					icon:'none'
+				})
 			})
 			
 		},

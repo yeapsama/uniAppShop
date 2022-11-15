@@ -1313,17 +1313,21 @@ router.post('/api/addOrder', function(req, res, next) {
     let goodsNum = 0;
     //订单号
     let orderId = orderNumber();
-    
+    //商品id
+	let goodsId = [];
+	
     goodsArr.forEach(v=>{
         goodsName.push(  v.name );
         goodsNum += parseInt(v.num);
         goodsPrice +=  v.num * v.pprice;
+		goodsId.push(v.goods_id)
     })
-    
+    let goodsIdStr = goodsId.join(',');
+	
     connection.query(`select * from user where phone = '${phone.name}'`, function (error, results, fields) {
     	//当前用户id
     	let userId = results[0].id;
-        connection.query(`insert into store_order (uId,order_id,goods_name,goods_price,goods_num,order_status) values ('${userId}','${orderId}','${goodsName}','${goodsPrice}','${goodsNum}','1')`,function(){
+        connection.query(`insert into store_order (uId,order_id,goods_name,goods_price,goods_num,order_status,order_list_id) values ('${userId}','${orderId}','${goodsName}','${goodsPrice}','${goodsNum}','1','${goodsIdStr}')`,function(){
             connection.query(`select * from store_order where uId = ${userId} and order_id = ${orderId}`,function(err,result){
                 res.send({
                     data:{
@@ -1406,14 +1410,80 @@ router.post('/api/submitOrder', function(req, res, next) {
 //         })
 //     })
 // })
-
+//支付接口
 router.post('/api/payment', function(req, res, next) {
-	res.send({
-		data:{
-			code:200,
-			success:true
-		}
+	let token = req.headers.token;
+	let phone = jwt.decode(token);
+	//订单号
+	let orderId = req.body.orderId;
+	connection.query(`select * from user where phone = '${phone.name}'`, function (error, results, fields) {
+		//当前用户id
+		let userId = results[0].id;
+	    connection.query(`select * from store_order where uId = ${userId} and order_id = ${orderId}`,function(err,result){
+	        //订单的id
+	        let id = result[0].id;
+			//将状态 修改为3(已支付)
+	            connection.query(`update store_order set order_status = replace(order_status,'2','3') where id = ${id}`,function(){
+	                res.send({
+	                    data:{
+	                        code:200,
+	                        success:true
+	                    }
+	                })
+	         })
+	    })
 	})
 })
-	
+
+function findGoods(id){
+	return new Promise(resolve=>{
+		let a={};
+		connection.query(`select * from goods_search where id='${Number(id)}'`,function(ee,ress){
+				a = {id:ress[0].id,imgUrl:ress[0].imgUrl,name:ress[0].name,pprice:ress[0].pprice,oprice:ress[0].oprice,discount:ress[0].discount};
+				resolve(a)
+				})
+		})
+}
+//我的订单
+router.post('/api/myorder', function(req, res, next) {
+	let token = req.headers.token;
+	let phone = jwt.decode(token);
+	connection.query(`select * from user where phone = '${phone.name}'`, function (error, results, fields) {
+		//当前用户id
+		let userId = results[0].id;
+	    connection.query(`select * from store_order where uId = ${userId} order by order_status DESC,order_id`,function(err,result){
+	        //订单的id
+	        let id = result[0].id;
+			let resData = [].concat(result);
+			let p,p2
+			resData.forEach((element,index) =>{
+				let orderListArr = element['order_list_id'].split(',');
+				element.data = [];
+				let test = [];
+						let newArr = [];
+						orderListArr.forEach(async(e) => {
+								p = findGoods(e).then(newArr22=>{
+									newArr.push(newArr22)
+								})
+						})
+						p = p.then(()=>{
+							return new Promise(r=>{
+								// element.data = JSON.stringify(newArr)
+								element.data = newArr
+								r(true)
+							})
+						})
+				
+			})
+			p.then(()=>{
+				res.json({
+					success:true,
+					data:resData
+				})
+			})
+			
+	    })
+	})
+})
+
 module.exports = router;

@@ -3,12 +3,12 @@
 		<image class='goods-img' :src="item.imgUrl" mode=""></image>
 		<view class='goods-text'>
 			<view class='goods-name'>{{item.name}}</view>
-			<view class='goods-size f-color'>颜色分类：{{item.attrs}}</view>
+			<view class='goods-size f-color'>颜色分类：黑色</view>
 			<view class='f-active-color' style='font-size:24rpx'>7天无理由</view>
 		</view>
 		<view>
 			<view>¥{{item.pprice}}</view>
-			<view class='f-color'>*{{item.num}}</view>
+			<!-- <view class='f-color'>*{{item.num}}</view> -->
 		</view>
 	</view>
 </template>
